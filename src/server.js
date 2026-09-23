@@ -30,6 +30,6 @@ if (config.geminiApiKey) {
 const store = new MemoryStore(config);
 const messenger = createMessenger(config);
 const bot = createBot({ config, shop, store, messenger, ai });
-const app = createApp({ config, bot });
+const app = createApp({ config, bot, ai });
 
 app.listen(config.port, () => console.log(`Bot đang chạy ở cổng ${config.port}`));

@@ -101,30 +101,63 @@ function createAi({ apiKey, model, maxTokens, shop, catalog, faq, client }) {
 }
 
 // ---- Google Gemini (có gói miễn phí) ----
-function createGeminiAi({ apiKey, model, maxTokens, shop, catalog, faq, fetchImpl = fetch }) {
+function createGeminiAi({ apiKey, model, maxTokens, shop, catalog, faq, fetchImpl = fetch, logger = console }) {
   const system = buildSystemPrompt(shop, catalog, faq);
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  // Thử lần lượt: model cấu hình → các model dự phòng (khi model không tồn tại / hết lượt / quá tải)
+  const models = [...new Set([model, "gemini-flash-latest", "gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite"].filter(Boolean))];
+  let current = 0;
 
-  async function reply(history) {
-    const msgs = normalize(history);
-    if (!msgs.length) return { text: "", handoff: false };
+  async function callModel(m, msgs) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`;
     const res = await fetchImpl(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
-        contents: msgs.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
+        contents: msgs.map((x) => ({ role: x.role === "assistant" ? "model" : "user", parts: [{ text: x.content }] })),
         // Dư chỗ cho model "suy nghĩ" trước khi trả lời; độ dài câu trả lời do hướng dẫn quy định
         generationConfig: { maxOutputTokens: Math.max(maxTokens, 2048), temperature: 0.4 },
       }),
     });
     const body = await res.text();
-    if (!res.ok) throw new Error(`Gemini ${res.status} ${body.slice(0, 300)}`);
+    if (!res.ok) {
+      const err = new Error(`Gemini ${res.status} (model ${m}): ${body.slice(0, 400)}`);
+      err.status = res.status;
+      throw err;
+    }
     const data = JSON.parse(body);
-    const parts = (((data.candidates || [])[0] || {}).content || {}).parts || [];
-    return finish(parts.filter((p) => p.text && !p.thought).map((p) => p.text).join("\n"));
+    const cand = (data.candidates || [])[0] || {};
+    const parts = (cand.content || {}).parts || [];
+    const text = parts.filter((p) => p.text && !p.thought).map((p) => p.text).join("\n");
+    if (!text.trim()) {
+      const err = new Error(`Gemini trả về rỗng (model ${m}, finishReason=${cand.finishReason || "?"}, block=${(data.promptFeedback || {}).blockReason || "-"})`);
+      err.status = 0;
+      throw err;
+    }
+    return text;
   }
-  return { reply, system, provider: "gemini" };
+
+  async function reply(history) {
+    const msgs = normalize(history);
+    if (!msgs.length) return { text: "", handoff: false };
+    let lastErr;
+    for (let i = 0; i < models.length; i++) {
+      const idx = (current + i) % models.length;
+      try {
+        const text = await callModel(models[idx], msgs);
+        if (idx !== current) logger.log(`[ai] Chuyển sang dùng model ${models[idx]}`);
+        current = idx;
+        return finish(text);
+      } catch (e) {
+        lastErr = e;
+        logger.error(`[ai] Lỗi AI: ${e.message}`);
+        // Khóa sai / không có quyền → thử model khác cũng vô ích
+        if (e.status === 400 || e.status === 401 || e.status === 403) break;
+      }
+    }
+    throw lastErr;
+  }
+  return { reply, system, provider: "gemini", models: () => models, current: () => models[current] };
 }
 
 module.exports = { createAi, createGeminiAi, buildSystemPrompt, hotlineText, HANDOFF_TAG };

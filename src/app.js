@@ -10,7 +10,7 @@ function verifySignature(appSecret, rawBody, header) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-function createApp({ config, bot, logger = console }) {
+function createApp({ config, bot, ai, logger = console }) {
   const app = express();
   app.disable("x-powered-by");
   app.use(
@@ -34,6 +34,21 @@ function createApp({ config, bot, logger = console }) {
         `ANTHROPIC_API_KEY: ${mark(config.anthropicApiKey)}${!config.geminiApiKey && config.anthropicApiKey ? " (đang dùng AI Claude)" : ""}`,
       ].join("\n")
     );
+  });
+
+  // Tự kiểm tra AI: mở /test-ai?key=<VERIFY_TOKEN> trên trình duyệt
+  app.get("/test-ai", async (req, res) => {
+    res.type("text/plain; charset=utf-8");
+    if (!config.verifyToken || req.query.key !== config.verifyToken) return res.status(403).send("Sai key. Dùng: /test-ai?key=<VERIFY_TOKEN>");
+    if (!ai) return res.send("❌ Chưa có AI (thiếu GEMINI_API_KEY / ANTHROPIC_API_KEY)");
+    const q = String(req.query.q || "phòng khách 20m2 nên dùng đèn gì");
+    try {
+      const r = await ai.reply([{ role: "user", content: q }]);
+      res.send(`✅ AI hoạt động${ai.current ? ` (model: ${ai.current()})` : ""}\n\nHỏi: ${q}\n\nĐáp: ${r.text}${r.handoff ? "\n\n(→ chuyển nhân viên)" : ""}`);
+    } catch (e) {
+      const msg = String(e.message || e).replace(/AIza[0-9A-Za-z_-]+/g, "AIza***");
+      res.send(`❌ AI LỖI:\n\n${msg}`);
+    }
   });
 
   // Facebook gọi 1 lần để xác minh webhook
