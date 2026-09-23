@@ -1,0 +1,24 @@
+{
+  "name": "alp-messenger-bot",
+  "version": "1.0.0",
+  "description": "Chatbot Messenger cho An Lạc Phát (kịch bản + AI)",
+  "main": "src/server.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js",
+    "setup-profile": "node scripts/setup-profile.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
+    "dotenv": "^18.0.3",
+    "express": "^4.22.3"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
+}

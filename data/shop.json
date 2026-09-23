@@ -1,0 +1,48 @@
+{
+  "_huong_dan": "Sửa các giá trị bên dưới cho đúng. Mục nào để trống (\"\") thì bot sẽ KHÔNG tự trả lời mục đó mà hẹn nhân viên xác nhận. Sửa xong phải khởi động lại bot.",
+  "ten_cong_ty": "Công Ty TNHH Thiết Bị Điện An Lạc Phát",
+  "ten_goi_tat": "An Lạc Phát",
+  "gioi_thieu": "Nhà phân phối thiết bị điện và đèn LED với hơn 15 năm kinh nghiệm, đại lý cấp 1 của Panasonic, Philips, Megaman, Nanoco, Schneider, Opple.",
+  "hotline": [
+    {
+      "so": "0908 53 53 53",
+      "ten": "Mr. Hoài"
+    },
+    {
+      "so": "0827 24 24 24",
+      "ten": "Mr. Thuận"
+    }
+  ],
+  "website": "https://anlacphat.com",
+  "shopee": "https://shopee.vn/anlacphat",
+  "tiktok": "https://www.tiktok.com/@anlacphatlighting",
+  "dia_chi": "107 Hồ Sỹ Dương, Cẩm Lệ, Đà Nẵng",
+  "gio_lam_viec": "08:00 – 17:30",
+  "thuong_hieu_ban_tren_san": [
+    "Megaman",
+    "Panasonic",
+    "Nanoco",
+    "Philips"
+  ],
+  "thuong_hieu_chua_len_san": [
+    "Opple"
+  ],
+  "nguong_so_luong_lon": 5,
+  "ghi_chu_nguong": "Mua từ ngưỡng này trở lên thì chuyển nhân viên báo giá trực tiếp; ít hơn thì hướng dẫn mua trên Shopee/TikTok Shop.",
+  "chinh_sach_bao_hanh": "Bảo hành theo chính sách nhà sản xuất: đèn LED bảo hành 2 năm, thiết bị điện bảo hành 1 năm.",
+  "chinh_sach_doi_tra": "Đơn mua trên Shopee/TikTok Shop áp dụng chính sách đổi trả của sàn. Đơn mua trực tiếp: nhân viên xác nhận theo từng trường hợp.",
+  "chinh_sach_giao_hang": "Nội thành Đà Nẵng: giao trong ngày. Ngoài Đà Nẵng: 3–4 ngày. Phí ship tùy hình thức giao khách chọn (giao nhanh hay tiết kiệm) — nhân viên báo phí cụ thể theo địa chỉ.",
+  "phuong_thuc_thanh_toan": "Thanh toán tiền mặt khi nhận hàng (COD) hoặc chuyển khoản.",
+  "xuat_hoa_don_vat": "Có xuất hóa đơn VAT.",
+  "thong_tin_them_cho_ai": [
+    "Hàng chính hãng: An Lạc Phát là đại lý cấp 1 của Panasonic, Philips, Megaman, Nanoco… hơn 15 năm trong ngành.",
+    "Khách lo shop mới/ít đánh giá: kênh Shopee/TikTok mới mở nhưng công ty đã hơn 15 năm là đại lý cấp 1 chính hãng — mới với kênh, không mới với ngành; mời khách xem website anlacphat.com.",
+    "So sánh thương hiệu: Panasonic (Nhật Bản) lâu đời, nhận diện cao, giá nhỉnh hơn; Megaman tầm trung, đa dạng mẫu; Nanoco (Việt Nam) giá cạnh tranh, tiết kiệm chi phí. Tư vấn theo ngân sách và ưu tiên của khách.",
+    "Dòng đèn Opple nổi bật: công nghệ chống chói, thiết kế đẹp, vỏ nhôm đúc nguyên khối.",
+    "Đèn đổi màu (3 màu: trắng/trung tính/vàng): đổi màu bằng cách bật/tắt công tắc, không cần điều khiển riêng.",
+    "Chọn công suất tham khảo (quy tắc chung ngành đèn): đèn LED 9W (~800–900 lumen) hợp phòng khoảng 10–15m²; phòng rộng hơn chọn 12–15W; phòng nhỏ (nhà vệ sinh, kho) 6–7W là đủ. Khuyên khách đo diện tích thực tế.",
+    "Màu ánh sáng: 6500K = ánh sáng trắng; 4000K = trung tính; 3000K = vàng.",
+    "Không so sánh hay nói về shop/đối thủ khác bằng tên. Khách so giá với nơi khác → nhấn mạnh hàng chính hãng, đại lý cấp 1, đa thương hiệu, có tư vấn kỹ thuật.",
+    "Giá sỉ / chiết khấu số lượng: chưa có chính sách công khai → chuyển nhân viên báo giá."
+  ]
+}
