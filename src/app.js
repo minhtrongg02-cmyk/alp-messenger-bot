@@ -20,7 +20,21 @@ function createApp({ config, bot, logger = console }) {
     })
   );
 
-  app.get("/", (_req, res) => res.send("An Lạc Phát Messenger bot đang chạy ✅"));
+  // Trang kiểm tra: chỉ cho biết biến nào ĐÃ/CHƯA có, không bao giờ hiện giá trị
+  app.get("/", (_req, res) => {
+    const mark = (v) => (v ? "✅ đã có" : "❌ CHƯA CÓ");
+    res.type("text/plain; charset=utf-8").send(
+      [
+        "An Lạc Phát Messenger bot đang chạy ✅",
+        "",
+        `VERIFY_TOKEN:      ${mark(config.verifyToken)}${config.verifyToken ? ` (${config.verifyToken.length} ký tự)` : ""}`,
+        `PAGE_ACCESS_TOKEN: ${mark(config.pageAccessToken)}`,
+        `APP_SECRET:        ${mark(config.appSecret)}`,
+        `GEMINI_API_KEY:    ${mark(config.geminiApiKey)}${config.geminiApiKey ? ` (đang dùng AI Gemini: ${config.geminiModel})` : ""}`,
+        `ANTHROPIC_API_KEY: ${mark(config.anthropicApiKey)}${!config.geminiApiKey && config.anthropicApiKey ? " (đang dùng AI Claude)" : ""}`,
+      ].join("\n")
+    );
+  });
 
   // Facebook gọi 1 lần để xác minh webhook
   app.get("/webhook", (req, res) => {
@@ -31,6 +45,12 @@ function createApp({ config, bot, logger = console }) {
       logger.log("[webhook] Đã xác minh webhook");
       return res.status(200).send(challenge);
     }
+    logger.warn(
+      `[webhook] Xác minh THẤT BẠI: ` +
+        (!config.verifyToken
+          ? "Render chưa có biến VERIFY_TOKEN"
+          : `mã Meta gửi (${String(token || "").length} ký tự) khác VERIFY_TOKEN trên Render (${config.verifyToken.length} ký tự)`)
+    );
     return res.sendStatus(403);
   });
 

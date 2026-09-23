@@ -1,8 +1,8 @@
 const config = require("./config");
-const { loadShop, loadProducts, catalogText } = require("./data");
+const { loadShop, loadProducts, loadFaq, catalogText } = require("./data");
 const { MemoryStore } = require("./store");
 const { createMessenger } = require("./messenger");
-const { createAi } = require("./ai");
+const { createAi, createGeminiAi } = require("./ai");
 const { createBot } = require("./bot");
 const { createApp } = require("./app");
 
@@ -13,16 +13,19 @@ const shop = loadShop();
 const products = loadProducts();
 console.log(`Đã nạp ${products.length} sản phẩm.`);
 
-const ai = config.anthropicApiKey
-  ? createAi({
-      apiKey: config.anthropicApiKey,
-      model: config.anthropicModel,
-      maxTokens: config.aiMaxTokens,
-      shop,
-      catalog: catalogText(products),
-    })
-  : null;
-if (!ai) console.warn("⚠️  Chưa có ANTHROPIC_API_KEY → bot chỉ chạy kịch bản, không có AI.");
+const faq = loadFaq();
+console.log(`Đã nạp ${faq.length} câu trả lời mẫu.`);
+const common = { maxTokens: config.aiMaxTokens, shop, catalog: catalogText(products), faq };
+let ai = null;
+if (config.geminiApiKey) {
+  ai = createGeminiAi({ ...common, apiKey: config.geminiApiKey, model: config.geminiModel });
+  console.log(`AI: Google Gemini (${config.geminiModel})`);
+} else if (config.anthropicApiKey) {
+  ai = createAi({ ...common, apiKey: config.anthropicApiKey, model: config.anthropicModel });
+  console.log(`AI: Claude (${config.anthropicModel})`);
+} else {
+  console.warn("⚠️  Chưa có GEMINI_API_KEY hoặc ANTHROPIC_API_KEY → bot chỉ chạy kịch bản, không có AI.");
+}
 
 const store = new MemoryStore(config);
 const messenger = createMessenger(config);

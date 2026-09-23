@@ -40,6 +40,12 @@ function loadProducts(dir = DATA_DIR) {
   return parseCsv(fs.readFileSync(file, "utf8")).filter((p) => p.ten_san_pham || p.ma_sp);
 }
 
+function loadFaq(dir = DATA_DIR) {
+  const file = path.join(dir, "faq.csv");
+  if (!fs.existsSync(file)) return [];
+  return parseCsv(fs.readFileSync(file, "utf8")).filter((r) => r.cau_hoi && r.tra_loi);
+}
+
 // Chuyển danh mục thành văn bản gọn để đưa cho AI.
 function catalogText(products) {
   if (!products.length) return "(Danh mục sản phẩm CHƯA được cập nhật.)";
@@ -50,4 +56,4 @@ function catalogText(products) {
   return lines.join("\n");
 }
 
-module.exports = { loadShop, loadProducts, parseCsv, catalogText, DATA_DIR };
+module.exports = { loadShop, loadProducts, loadFaq, parseCsv, catalogText, DATA_DIR };

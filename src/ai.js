@@ -5,7 +5,7 @@ function hotlineText(shop) {
   return (shop.hotline || []).map((h) => `${h.so} (${h.ten})`).join(" / ");
 }
 
-function buildSystemPrompt(shop, catalog) {
+function buildSystemPrompt(shop, catalog, faq = []) {
   const filled = (v) => (v && String(v).trim() ? String(v).trim() : "CHƯA CÓ — không được tự trả lời, hẹn nhân viên xác nhận");
   return `Bạn là nhân viên chăm sóc khách hàng của ${shop.ten_goi_tat} (${shop.ten_cong_ty}), trả lời tin nhắn Fanpage Facebook.
 ${shop.gioi_thieu}
@@ -51,43 +51,80 @@ Khi chuyển, báo khách nhân viên sẽ phản hồi sớm, và cho hotline: 
 - Hóa đơn VAT: ${filled(shop.xuat_hoa_don_vat)}
 ${(shop.thong_tin_them_cho_ai || []).map((x) => `- ${x}`).join("\n")}
 
+# CÂU TRẢ LỜI MẪU CỦA SHOP (do shop soạn — ưu tiên dùng đúng nội dung này khi khách hỏi ý tương tự)
+${faq.length ? faq.map((f) => `Hỏi: ${f.cau_hoi}\nĐáp: ${f.tra_loi}`).join("\n\n") : "(chưa có)"}
+
 # DANH MỤC SẢN PHẨM
 ${catalog}`;
 }
 
-function createAi({ apiKey, model, maxTokens, shop, catalog, client }) {
+// Chuẩn hoá lịch sử: bắt đầu bằng 'user', gộp tin liên tiếp cùng vai trò
+function normalize(history) {
+  const msgs = [];
+  for (const m of history) {
+    const last = msgs[msgs.length - 1];
+    if (last && last.role === m.role) last.content += "\n" + m.content;
+    else msgs.push({ role: m.role, content: m.content });
+  }
+  while (msgs.length && msgs[0].role !== "user") msgs.shift();
+  return msgs;
+}
+
+function finish(raw) {
+  let text = String(raw || "").trim();
+  const handoff = text.includes(HANDOFF_TAG);
+  text = text.split(HANDOFF_TAG).join("").replace(/\*\*/g, "").replace(/^#+\s*/gm, "").trim();
+  return { text, handoff };
+}
+
+// ---- Claude (Anthropic) ----
+function createAi({ apiKey, model, maxTokens, shop, catalog, faq, client }) {
   let anthropic = client;
   if (!anthropic) {
     const Anthropic = require("@anthropic-ai/sdk");
     anthropic = new Anthropic({ apiKey });
   }
-  const system = buildSystemPrompt(shop, catalog);
+  const system = buildSystemPrompt(shop, catalog, faq);
 
-  // history: [{role:'user'|'assistant', content}] — tin cuối là của khách
   async function reply(history) {
-    // API yêu cầu bắt đầu bằng 'user' và xen kẽ vai trò → gộp tin liên tiếp cùng vai trò
-    const msgs = [];
-    for (const m of history) {
-      const last = msgs[msgs.length - 1];
-      if (last && last.role === m.role) last.content += "\n" + m.content;
-      else msgs.push({ role: m.role, content: m.content });
-    }
-    while (msgs.length && msgs[0].role !== "user") msgs.shift();
+    const msgs = normalize(history);
     if (!msgs.length) return { text: "", handoff: false };
-
     const res = await anthropic.messages.create({
       model,
       max_tokens: maxTokens,
       system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
       messages: msgs,
     });
-    let text = (res.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
-    const handoff = text.includes(HANDOFF_TAG);
-    text = text.split(HANDOFF_TAG).join("").replace(/\*\*/g, "").trim();
-    return { text, handoff };
+    return finish((res.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n"));
   }
-
-  return { reply, system };
+  return { reply, system, provider: "claude" };
 }
 
-module.exports = { createAi, buildSystemPrompt, hotlineText, HANDOFF_TAG };
+// ---- Google Gemini (có gói miễn phí) ----
+function createGeminiAi({ apiKey, model, maxTokens, shop, catalog, faq, fetchImpl = fetch }) {
+  const system = buildSystemPrompt(shop, catalog, faq);
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+
+  async function reply(history) {
+    const msgs = normalize(history);
+    if (!msgs.length) return { text: "", handoff: false };
+    const res = await fetchImpl(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: msgs.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
+        // Dư chỗ cho model "suy nghĩ" trước khi trả lời; độ dài câu trả lời do hướng dẫn quy định
+        generationConfig: { maxOutputTokens: Math.max(maxTokens, 2048), temperature: 0.4 },
+      }),
+    });
+    const body = await res.text();
+    if (!res.ok) throw new Error(`Gemini ${res.status} ${body.slice(0, 300)}`);
+    const data = JSON.parse(body);
+    const parts = (((data.candidates || [])[0] || {}).content || {}).parts || [];
+    return finish(parts.filter((p) => p.text && !p.thought).map((p) => p.text).join("\n"));
+  }
+  return { reply, system, provider: "gemini" };
+}
+
+module.exports = { createAi, createGeminiAi, buildSystemPrompt, hotlineText, HANDOFF_TAG };
