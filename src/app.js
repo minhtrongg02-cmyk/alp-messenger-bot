@@ -1,5 +1,6 @@
 const express = require("express");
 const crypto = require("crypto");
+const path = require("path");
 
 function verifySignature(appSecret, rawBody, header) {
   if (!appSecret) return true; // chưa cấu hình APP_SECRET → bỏ qua (chỉ dùng khi thử nghiệm)
@@ -35,6 +36,10 @@ function createApp({ config, bot, ai, logger = console }) {
       ].join("\n")
     );
   });
+
+  // Trang Chính sách quyền riêng tư (dùng cho Meta App Review)
+  const privacyFile = path.join(__dirname, "privacy.html");
+  app.get(["/chinh-sach-bao-mat", "/privacy"], (_req, res) => res.sendFile(privacyFile));
 
   // Tự kiểm tra AI: mở /test-ai?key=<VERIFY_TOKEN> trên trình duyệt
   app.get("/test-ai", async (req, res) => {

@@ -20,6 +20,7 @@ const SPACES = ["Phòng khách", "Phòng ngủ", "Nhà bếp", "Văn phòng", "C
 
 const RE_MENU = /^\s*(menu|bắt đầu|start|hi|hello|chào|xin chào|alo)\s*[.!]*\s*$/i;
 const RE_HUMAN = /(gặp|nói chuyện với|cho (tôi|mình|em) gặp).{0,15}(nhân viên|người thật|tư vấn viên|admin|quản lý)|^\s*(nhân viên|người thật)\s*$/i;
+const RE_DELETE = /(x[oó]a|xoá|hủy|huỷ).{0,10}(d[uữ] li[eệ]u|th[oô]ng tin c[aá] nh[aâ]n)|delete (my )?data/i;
 const RESUME_CMD = "#bot"; // nhân viên gõ "#bot" trong hộp thư để bật lại bot cho khách đó
 
 function createBot({ config, shop, store, messenger, ai, logger = console }) {
@@ -151,6 +152,11 @@ function createBot({ config, shop, store, messenger, ai, logger = console }) {
     }
     if (RE_MENU.test(text) && u.history.length === 0) return greet(psid);
     if (/^\s*menu\s*$/i.test(text)) return greet(psid);
+    if (RE_DELETE.test(text)) {
+      store.addHistory(psid, "user", text);
+      logger.log(`[bot] YÊU CẦU XÓA DỮ LIỆU: khách ${psid}`);
+      return handoff(psid, "Dạ em đã ghi nhận yêu cầu xóa dữ liệu của anh/chị. Shop sẽ xử lý trong vòng 30 ngày và xác nhận lại với anh/chị ạ.");
+    }
     if (RE_HUMAN.test(text)) {
       store.addHistory(psid, "user", text);
       return handoff(psid);
